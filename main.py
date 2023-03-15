@@ -7,6 +7,8 @@ import json
 import platform
 import subprocess
 
+def getAbsoluteFileDataPath(fileName):
+    return os.path.join(os.path.dirname(__file__), fileName)
 
 VENDOR_ID = 0x046D
 PRODUCT_ID = 0xC52B
@@ -19,7 +21,8 @@ TARGET_CHANNEL = 0x00  # Change to your desired value
 TARGET1_POS="right"
 TARGET2_POS="none"
 TARGET3_POS="none"
-CONFIG_FILE = 'config.json'
+CONFIG_FILE_NAME = 'config.json'
+CONFIG_FILE = getAbsoluteFileDataPath(CONFIG_FILE_NAME)
 
 app = QApplication(sys.argv)
 desktop = QDesktopWidget()
@@ -62,6 +65,7 @@ def save_config():
     MOUSE_CMD = [0x10, MS_RECEIVER_SLOT, MOUSE_ID, 0x1c, TARGET_CHANNEL, 0x00, 0x00]
 
 def load_config():
+    print("load_config started")
     if not os.path.isfile(CONFIG_FILE):
         return
 
@@ -83,6 +87,7 @@ def load_config():
     TARGET1_POS = config.get('TARGET1_POS', MS_RECEIVER_SLOT)
     TARGET2_POS = config.get('TARGET2_POS', KEYBOARD_ID)
     TARGET3_POS = config.get('TARGET3_POS', MOUSE_ID)
+    print("load_config finished")
 
 load_config()
 
@@ -92,9 +97,9 @@ MOUSE_CMD = [0x10, MS_RECEIVER_SLOT, MOUSE_ID, 0x1c, TARGET_CHANNEL, 0x00, 0x00]
 class SettingsDialog(QDialog):
     def __init__(self):
         super().__init__()
-
+        print("SettingsDialog init")
         self.setWindowTitle('Settings')
-        self.setWindowIcon(QIcon('icon.png'))
+        self.setWindowIcon(QIcon(getAbsoluteFileDataPath('icon.png')))
         self.setWindowFlags(Qt.WindowCloseButtonHint)
 
         self.vendor_id_edit = QLineEdit(f'{VENDOR_ID:04X}')
@@ -217,6 +222,7 @@ def write_to_adu(msg_str):
 class SystemTrayIcon(QSystemTrayIcon):
     def __init__(self, icon, parent=None):
         super().__init__(icon, parent)
+        print("SystemTrayIcon init")
         self.menu = QMenu(parent)
         self.activate_action = self.menu.addAction('Activate')
         self.activate_action.setCheckable(True)
@@ -243,51 +249,51 @@ class SystemTrayIcon(QSystemTrayIcon):
         mouse_pos = QCursor.pos()
         successKb = False
         successMs = False
-        if TARGET1_POS == 'left' and mouse_pos.x() < leftmost_edge:
+        if TARGET1_POS == 'left' and mouse_pos.x() <= leftmost_edge:
             successMs = write_to_adu( getMsCmd(1))
             successKb = write_to_adu( getKbCmd(1))
 
-        elif TARGET1_POS == 'right' and mouse_pos.x() > rightmost_edge:
+        elif TARGET1_POS == 'right' and mouse_pos.x() >= rightmost_edge:
             successMs = write_to_adu( getMsCmd(1))
             successKb = write_to_adu( getKbCmd(1))
 
-        elif TARGET1_POS == 'top' and mouse_pos.y() < topmost_edge:
+        elif TARGET1_POS == 'top' and mouse_pos.y() <= topmost_edge:
             successMs = write_to_adu( getMsCmd(1))
             successKb = write_to_adu( getKbCmd(1))
 
-        elif TARGET1_POS == 'bottom' and mouse_pos.y() > bottommost_edge:
+        elif TARGET1_POS == 'bottom' and mouse_pos.y() >= bottommost_edge:
             successMs = write_to_adu( getMsCmd(1))
             successKb = write_to_adu( getKbCmd(1))
 
-        elif TARGET2_POS == 'left' and mouse_pos.x() < leftmost_edge:
+        elif TARGET2_POS == 'left' and mouse_pos.x() <= leftmost_edge:
             successMs = write_to_adu( getMsCmd(2))
             successKb = write_to_adu( getKbCmd(2))
 
-        elif TARGET2_POS == 'right' and mouse_pos.x() > rightmost_edge:
+        elif TARGET2_POS == 'right' and mouse_pos.x() >= rightmost_edge:
             successMs = write_to_adu( getMsCmd(2))
             successKb = write_to_adu( getKbCmd(2))
 
-        elif TARGET2_POS == 'top' and mouse_pos.y() < topmost_edge:
+        elif TARGET2_POS == 'top' and mouse_pos.y() <= topmost_edge:
             successMs = write_to_adu( getMsCmd(2))
             successKb = write_to_adu( getKbCmd(2))
 
-        elif TARGET2_POS == 'bottom' and mouse_pos.y() > bottommost_edge:
+        elif TARGET2_POS == 'bottom' and mouse_pos.y() >= bottommost_edge:
             successMs = write_to_adu( getMsCmd(2))
             successKb = write_to_adu( getKbCmd(2))
 
-        elif TARGET3_POS == 'left' and mouse_pos.x() < leftmost_edge:
+        elif TARGET3_POS == 'left' and mouse_pos.x() <= leftmost_edge:
             successMs = write_to_adu( getMsCmd(3))
             successKb = write_to_adu( getKbCmd(3))
 
-        elif TARGET3_POS == 'right' and mouse_pos.x() > rightmost_edge:
+        elif TARGET3_POS == 'right' and mouse_pos.x() >= rightmost_edge:
             successMs = write_to_adu( getMsCmd(3))
             successKb = write_to_adu( getKbCmd(3))
 
-        elif TARGET3_POS == 'top' and mouse_pos.y() < topmost_edge:
+        elif TARGET3_POS == 'top' and mouse_pos.y() <= topmost_edge:
             successMs = write_to_adu( getMsCmd(3))
             successKb = write_to_adu( getKbCmd(3))
 
-        elif TARGET3_POS == 'bottom' and mouse_pos.y() > bottommost_edge:
+        elif TARGET3_POS == 'bottom' and mouse_pos.y() >= bottommost_edge:
             successMs = write_to_adu( getMsCmd(3))
             successKb = write_to_adu( getKbCmd(3))
 
@@ -299,7 +305,10 @@ class SystemTrayIcon(QSystemTrayIcon):
 
     def quit(self):
         app.quit()
-
-tray_icon = SystemTrayIcon(QIcon('icon.png'))
-tray_icon.show()
-sys.exit(app.exec_())
+try:
+    tray_icon = SystemTrayIcon(QIcon(getAbsoluteFileDataPath('icon.png')))
+    tray_icon.show()
+    sys.exit(app.exec_())
+except BaseException as e:
+    print("ERROR")
+    print(e)
