@@ -1,4 +1,6 @@
+# Logitech Channel Switcher
 
+This script allows you to switch channels of your Logitech keyboard and mouse automatically whenever the mouse goes over a specific part of the screen, which is configurable.
 
 ## Creating distribution
 
