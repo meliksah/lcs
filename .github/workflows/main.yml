@@ -37,7 +37,11 @@ jobs:
     - name: Create release artifacts
       run: |
         mkdir artifacts
-        cp dist/logitech_channel_changer* artifacts/
+        if [ "${{ matrix.os }}" == "macos-latest" ]; then
+          cp -R dist/logitech_channel_changer.app artifacts/
+        else
+          cp dist/logitech_channel_changer* artifacts/
+        fi
       shell: bash
 
     - name: Upload artifacts
