@@ -39,13 +39,15 @@ topmost_edge = topmost_screen.geometry().top()
 bottommost_screen = desktop.screen(screen_count - 1)
 bottommost_edge = bottommost_screen.geometry().bottom()
 
+screen_locations = ['top', 'bottom', 'right', 'left', 'none']
+
 def getKbCmd(target_channel):
     return [0x10, KB_RECEIVER_SLOT, KEYBOARD_ID, 0x1c, target_channel - 1, 0x00, 0x00]
 
 def getMsCmd(target_channel):
     return [0x10, MS_RECEIVER_SLOT, MOUSE_ID, 0x1c, target_channel - 1, 0x00, 0x00]
 
-def save_config():
+def save_config_file():
     config = {
         'VENDOR_ID': VENDOR_ID,
         'PRODUCT_ID': PRODUCT_ID,
@@ -60,9 +62,6 @@ def save_config():
     print(config)
     with open(CONFIG_FILE, 'w') as f:
         json.dump(config, f)
-    global KB_CMD, MOUSE_CMD
-    KB_CMD = [0x10, KB_RECEIVER_SLOT, KEYBOARD_ID, 0x1c, TARGET_CHANNEL, 0x00, 0x00]
-    MOUSE_CMD = [0x10, MS_RECEIVER_SLOT, MOUSE_ID, 0x1c, TARGET_CHANNEL, 0x00, 0x00]
 
 def load_config():
     print("load_config started")
@@ -73,7 +72,7 @@ def load_config():
         with open(CONFIG_FILE, 'r') as f:
             config = json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
-        save_config()
+        save_config_file()
         with open(CONFIG_FILE, 'r') as f:
             config = json.load(f)
 
@@ -110,20 +109,20 @@ class SettingsDialog(QDialog):
         self.mouse_id_edit = QLineEdit(f'{MOUSE_ID:02X}')
 
         self.target1_combo = QComboBox()
-        self.target1_combo.addItems(['top', 'bottom', 'right', 'left', 'none'])
+        self.target1_combo.addItems(screen_locations)
         target1_index = self.target1_combo.findText(TARGET1_POS)
         self.target1_combo.setCurrentIndex(target1_index)
         self.target2_combo = QComboBox()
-        self.target2_combo.addItems(['top', 'bottom', 'right', 'left', 'none'])
+        self.target2_combo.addItems(screen_locations)
         target2_index = self.target2_combo.findText(TARGET2_POS)
         self.target2_combo.setCurrentIndex(target2_index)
         self.target3_combo = QComboBox()
-        self.target3_combo.addItems(['top', 'bottom', 'right', 'left', 'none'])
+        self.target3_combo.addItems(screen_locations)
         target3_index = self.target3_combo.findText(TARGET3_POS)
         self.target3_combo.setCurrentIndex(target3_index)
 
         self.save_button = QPushButton('Save')
-        self.save_button.clicked.connect(self.save_config)
+        self.save_button.clicked.connect(self.close)
 
         layout = QVBoxLayout()
         layout.addWidget(QLabel('Vendor ID'))
@@ -152,16 +151,18 @@ class SettingsDialog(QDialog):
 
 
     def closeEvent(self, event):
+        self.close(self)
+        event.ignore()
+    def close(self):
         reply = QMessageBox.question(self, 'Message', 'Do you want to save the changes?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if reply == QMessageBox.Yes:
-            save_config()
+            self.save_config_local()
+            save_config_file()
             load_config()
         else:
             load_config()
-        event.ignore()
         self.hide()
-
-    def save_config(self):
+    def save_config_local(self):
         global VENDOR_ID, PRODUCT_ID, KB_RECEIVER_SLOT, MS_RECEIVER_SLOT, KEYBOARD_ID, MOUSE_ID, TARGET1_POS, TARGET2_POS, TARGET3_POS
 
         VENDOR_ID = int(self.vendor_id_edit.text(), 16)
@@ -174,8 +175,7 @@ class SettingsDialog(QDialog):
         TARGET2_POS = self.target2_combo.currentText()
         TARGET3_POS = self.target3_combo.currentText()
 
-def write_to_adu(msg_str):
-
+def get_hidapi_executable_full_path():
     # Determine the system's architecture and platform
     arch = platform.machine()
     system = platform.system().lower()
@@ -193,13 +193,21 @@ def write_to_adu(msg_str):
             executable = 'hidapitester-macos-arm64'
         elif arch == 'x86_64':
             executable = 'hidapitester-macos-x86_64'
-
     # Build the command string
-    exec_path = os.path.join(os.path.dirname(__file__), executable)
-    cmd = [exec_path, '--vidpid', f'{VENDOR_ID:04X}:{PRODUCT_ID:04X}', '--open', '--length', '7', '--send-output']
+    return os.path.join(os.path.dirname(__file__), executable)
+def build_hidapi_command(msg_str): 
+    exec_path = get_hidapi_executable_full_path()
+    cmd = [exec_path, '--vidpid', f'{VENDOR_ID:04X}:{PRODUCT_ID:04X}','--usage','1','--usagePage','0xFF00','--open', '--length', '7', '--send-output']
     hex_string = ','.join(f'0x{byte:02X}' for byte in msg_str)
     cmd.append(hex_string)
+    cmd.append('--length')
+    cmd.append('7')
+    cmd.append('--send-output')
+    cmd.append(hex_string)
+    return cmd
 
+def write_to_adu(msg_str):
+    cmd = build_hidapi_command(msg_str)
     print('Writing command: {}'.format(' '.join(cmd)))
     max_retries = 10
     success_msg = "wrote 7 bytes"
@@ -235,9 +243,6 @@ class SystemTrayIcon(QSystemTrayIcon):
         self.timer = QTimer()
         self.timer.timeout.connect(self.check_mouse_position)
         
-
-
-
     def icon_activated(self, checked):
         if checked:
             self.timer.start(300)  # Check mouse position every 1 second
