@@ -28,9 +28,9 @@ jobs:
     - name: Build application
       run: |
         if [ "${{ matrix.os }}" == "windows-latest" ]; then
-          python -m PyInstaller --onefile --windowed --add-data "icon.png;." --add-data "icon.ico;." --add-data "icon.icns;." --add-data "hidapitester-windows-x86_64.exe;." --add-data "hidapitester-linux-x86_64;." --add-data "hidapitester-linux-armv7l;." --add-data "hidapitester-macos-arm64;." --add-data "hidapitester-macos-x86_64;." --add-data "config.json;." --icon icon.ico --name logitech_channel_changer main.py
+          python -m PyInstaller --onefile --windowed --add-data "icon.png;." --add-data "icon.ico;." --add-data "icon.icns;." --add-data "hidapitester-windows-x86_64.exe;." --add-data "hidapitester-linux-x86_64;." --add-data "hidapitester-linux-armv7l;." --add-data "hidapitester-macos-arm64;." --add-data "hidapitester-macos-x86_64;." --add-data "config.json;." --icon icon.ico --name logitech_channel_switcher main.py
         else
-          pyinstaller --onefile --windowed --add-data "icon.png:." --add-data "icon.ico:." --add-data "icon.icns:." --add-data "hidapitester-windows-x86_64.exe:." --add-data "hidapitester-linux-x86_64:." --add-data "hidapitester-linux-armv7l:." --add-data "hidapitester-macos-arm64:." --add-data "hidapitester-macos-x86_64:." --add-data "config.json:." --icon=icon.icns --name logitech_channel_changer main.py
+          pyinstaller --onefile --windowed --add-data "icon.png:." --add-data "icon.ico:." --add-data "icon.icns:." --add-data "hidapitester-windows-x86_64.exe:." --add-data "hidapitester-linux-x86_64:." --add-data "hidapitester-linux-armv7l:." --add-data "hidapitester-macos-arm64:." --add-data "hidapitester-macos-x86_64:." --add-data "config.json:." --icon=icon.icns --name logitech_channel_switcher main.py
         fi
       shell: bash
 
@@ -38,16 +38,16 @@ jobs:
       run: |
         mkdir artifacts
         if [ "${{ matrix.os }}" == "macos-latest" ]; then
-          cp -R dist/logitech_channel_changer.app artifacts/
+          cp -R dist/logitech_channel_switcher.app artifacts/
         else
-          cp dist/logitech_channel_changer* artifacts/
+          cp dist/logitech_channel_switcher* artifacts/
         fi
       shell: bash
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v2
       with:
-        name: logitech_channel_changer-${{ matrix.os }}
+        name: logitech_channel_switcher-${{ matrix.os }}
         path: artifacts
   release:
     needs: build
@@ -57,8 +57,11 @@ jobs:
       uses: actions/download-artifact@v2
       with:
         path: artifacts/
+    - name: Set executable permission for macOS
+      run: chmod +x artifacts/logitech_channel_switcher-macos-latest/logitech_channel_switcher.app/Contents/MacOS/logitech_channel_switcher
+      shell: bash
     - name: Compress macOS artifact
-      run: zip -r artifacts/logitech_channel_changer-macos-latest/logitech_channel_changer-macos.zip artifacts/logitech_channel_changer-macos-latest/logitech_channel_changer.app
+      run: zip -r artifacts/logitech_channel_switcher-macos-latest/logitech_channel_switcher-macos.zip artifacts/logitech_channel_switcher-macos-latest/logitech_channel_switcher.app
     - name: Create Release
       id: create_release
       uses: actions/create-release@v1
@@ -75,8 +78,8 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: artifacts/logitech_channel_changer-macos-latest/logitech_channel_changer-macos.zip
-        asset_name: logitech_channel_changer-macos.zip
+        asset_path: artifacts/logitech_channel_switcher-macos-latest/logitech_channel_switcher-macos.zip
+        asset_name: logitech_channel_switcher-macos.zip
         asset_content_type: application/zip
 
     - name: Upload Linux artifact
@@ -85,8 +88,8 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: artifacts/logitech_channel_changer-ubuntu-latest/logitech_channel_changer
-        asset_name: logitech_channel_changer-linux
+        asset_path: artifacts/logitech_channel_switcher-ubuntu-latest/logitech_channel_switcher
+        asset_name: logitech_channel_switcher-linux
         asset_content_type: application/octet-stream
 
     - name: Upload Windows artifact
@@ -95,7 +98,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: artifacts/logitech_channel_changer-windows-latest/logitech_channel_changer.exe
-        asset_name: logitech_channel_changer-windows.exe
+        asset_path: artifacts/logitech_channel_switcher-windows-latest/logitech_channel_switcher.exe
+        asset_name: logitech_channel_switcher-windows.exe
         asset_content_type: application/octet-stream
 
