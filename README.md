@@ -1,7 +1,13 @@
 # Logitech Channel Switcher
 
 This script allows you to switch channels of your Logitech keyboard and mouse automatically whenever the mouse goes over a specific part of the screen, which is configurable.
-
+## Running Application
+### Linux 
+Linux needs sudo priveledges to run application. you can run with `sudo ./linux_channel_switcher` 
+### MacOSx 
+MacOSx needs input tracking privileges whenever you activate from system tray icon and go to edge of screen which is set at settings it needs to ask automatically
+### Windows
+Windows can run exe file directly
 ## Creating distribution
 
 ### Linux and MacOSx
