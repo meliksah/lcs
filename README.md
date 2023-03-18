@@ -1,5 +1,5 @@
 # Logitech Channel Switcher
-
+## Flow
 This script allows you to switch channels of your Logitech keyboard and mouse automatically whenever the mouse goes over a specific part of the screen, which is configurable.
 
 <img width="100" alt="image" src="https://user-images.githubusercontent.com/9367348/225811049-dd1e2950-fe20-44ce-98fc-4b6675b76e02.png">
@@ -12,6 +12,29 @@ You need to change Receiver Slot and ID accordingly in above settings. 0x10 at h
 | Keyboard | 0x10   | 0x01          | 0x09 | 0x1c              | 0x00           | 0x00    | 0x00    |
 | Mouse    | 0x10   | 0x02          | 0x0c | 0x1c              | 0x00           | 0x00    | 0x00    |
 
+For running application in linux you need to grant execution permission and run with sudo. Otherwise application cannot connect to hidapi
+
+```
+chmod +x logitech_channel_switcher-linux
+```
+
+For running application
+```
+sudo ./logitech_channel_switcher-linux
+```
+## Mouse Emulation
+For preventing sleep of computer whenever you are focused another computer it can move your mouse in every 10 second. If it detect user movement it will give up moving until user is not moving for 10 second.
+
+## Uniclip
+
+For linux users they need to install xclip, xsel, wayland or termux. [Details can be found here](https://github.com/quackduck/uniclip/blob/master/uniclip.go#L323)
+
+```
+sudo apt-get install xclip
+```
+
+Whenever you enabled server in one computer it will create server you can check ip and port from there and from another computer you can click connect server and enter ip and port in this format `192.168.50.50:55555`.
+
 ## Running Application
 ### Linux 
 Linux needs sudo priveledges to run application. you can run with `sudo ./linux_channel_switcher` 
@@ -23,12 +46,12 @@ Windows can run exe file directly
 
 ### Linux and MacOSx
 ```
-pyinstaller --onefile --windowed --add-data "icon.png:." --add-data "icon.ico:." --add-data "icon.icns:." --add-data "hidapitester-windows-x86_64.exe:." --add-data "hidapitester-linux-x86_64:." --add-data "hidapitester-linux-armv7l:." --add-data "hidapitester-macos-arm64:." --add-data "hidapitester-macos-x86_64:." --add-data "config.json:."--icon=icon.icns --name logitech_channel_switcher main.py
+pyinstaller --onefile --windowed --add-data "static/icon:static/icon" --add-data "static/hidapitester:static/hidapitester" --add-data "static/uniclip:static/uniclip" --icon static/icon/icon.icns --name logitech_channel_switcher src/main.py
 ```
 
 ### Windows
 ```
-python -m PyInstaller --onefile --windowed --add-data "icon.png;." --add-data "icon.ico;." --add-data "icon.icns;." --add-data "hidapitester-windows-x86_64.exe;." --add-data "hidapitester-linux-x86_64;." --add-data "hidapitester-linux-armv7l;." --add-data "hidapitester-macos-arm64;." --add-data "hidapitester-macos-x86_64;." --add-data "config.json;." --icon icon.ico --name logitech_channel_switcher main.py
+python -m PyInstaller --onefile --windowed --add-data "static/icon;static/icon" --add-data "static/hidapitester;static/hidapitester" --add-data "static/uniclip;static/uniclip" --icon static/icon/icon.ico --name logitech_channel_switcher src/main.py
 ```
 ## License
 

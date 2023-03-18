@@ -1,0 +1,5 @@
+build
+dist
+logitech_channel_switcher.spec
+.DS_Store
+/**/__pycache__

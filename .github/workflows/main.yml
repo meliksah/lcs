@@ -25,12 +25,14 @@ jobs:
         python -m pip install --upgrade pip
         pip install PyQt5 PyInstaller
         pip install Pillow
+        pip install scipy
+        pip install numpy
     - name: Build application
       run: |
         if [ "${{ matrix.os }}" == "windows-latest" ]; then
-          python -m PyInstaller --onefile --windowed --add-data "icon.png;." --add-data "icon.ico;." --add-data "icon.icns;." --add-data "hidapitester-windows-x86_64.exe;." --add-data "hidapitester-linux-x86_64;." --add-data "hidapitester-linux-armv7l;." --add-data "hidapitester-macos-arm64;." --add-data "hidapitester-macos-x86_64;." --add-data "config.json;." --icon icon.ico --name logitech_channel_switcher main.py
+          python -m PyInstaller --onefile --windowed --add-data "static/icon;static/icon" --add-data "static/hidapitester;static/hidapitester" --add-data "static/uniclip;static/uniclip" --icon static/icon/icon.ico --name logitech_channel_switcher src/main.py
         else
-          pyinstaller --onefile --windowed --add-data "icon.png:." --add-data "icon.ico:." --add-data "icon.icns:." --add-data "hidapitester-windows-x86_64.exe:." --add-data "hidapitester-linux-x86_64:." --add-data "hidapitester-linux-armv7l:." --add-data "hidapitester-macos-arm64:." --add-data "hidapitester-macos-x86_64:." --add-data "config.json:." --icon=icon.icns --name logitech_channel_switcher main.py
+          pyinstaller --onefile --windowed --add-data "static/icon:static/icon" --add-data "static/hidapitester:static/hidapitester" --add-data "static/uniclip:static/uniclip" --icon static/icon/icon.icns --name logitech_channel_switcher src/main.py
         fi
       shell: bash
 
