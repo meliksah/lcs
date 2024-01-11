@@ -28,7 +28,7 @@ class SystemTrayIcon(QSystemTrayIcon):
         self.menu.addSeparator()
 
         self.mouse_emulation = MouseEmulation()
-        self.mouse_emulation_action = self.menu.addAction('Mouse Emulation')
+        self.mouse_emulation_action = self.menu.addAction('Keep Me Awake')
         self.mouse_emulation_action.setCheckable(True)
         self.mouse_emulation_action.setChecked(False)
         self.mouse_emulation_action.triggered.connect(self.toggle_mouse_emulation)

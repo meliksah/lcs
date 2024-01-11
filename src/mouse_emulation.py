@@ -4,8 +4,9 @@ import time
 import math
 import logging
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QPushButton
-from PyQt5.QtCore import QTimer, QThread, pyqtSignal
+from PyQt5.QtCore import QTimer, QThread, pyqtSignal, Qt
 from PyQt5.QtGui import QCursor
+from PyQt5.QtTest import QTest
 from scipy import interpolate
 import numpy as np
 
@@ -53,41 +54,50 @@ class MoveMouseThread(QThread):
 
 class MouseEmulation:
     def __init__(self):
-        self.timer = QTimer()
-        self.move_mouse_thread = MoveMouseThread()
-        self.user_activity_timer = QTimer()
-        self.user_activity_timer.setInterval(10000)  # 10 seconds
-        self.user_activity_timer.timeout.connect(self.check_user_activity)
+        self.mouse_activity_timer = QTimer()
+        self.mouse_activity_timer.timeout.connect(self.check_user_activity)
+        self.mouse_activity_timer.setInterval(10000)
+        self.move_mouse_thread = None
         self.last_mouse_position = None
         self.user_inactive_time = 0
 
+        self.keypress_timer = QTimer()
+        self.keypress_timer.setInterval(30000)  # 30 seconds
+        self.keypress_timer.timeout.connect(self.simulate_keypress)
+
     def start(self):
         logger.debug("Starting MouseEmulation.")
-        self.timer.timeout.connect(self.check_user_activity)
-        self.timer.start(1000)  # Check for user activity every 1 second
-        self.start_mouse_movement()
+        self.last_mouse_position = QCursor.pos()
+        self.user_inactive_time = 0
+        self.mouse_activity_timer.start()  # Check for user activity every 10 seconds
+        self.keypress_timer.start()  # Start the keypress simulation
 
     def stop(self):
         logger.debug("Stopping MouseEmulation.")
-        self.timer.stop()
-        self.user_activity_timer.stop()
-        self.move_mouse_thread.terminate()
+        self.mouse_activity_timer.stop()
+        self.keypress_timer.stop()
+        if self.move_mouse_thread and self.move_mouse_thread.isRunning():
+            self.move_mouse_thread.terminate()
+            self.move_mouse_thread = None
 
     def check_user_activity(self):
         current_mouse_position = QCursor.pos()
-        if self.last_mouse_position is not None and self.last_mouse_position != current_mouse_position:
+        if self.last_mouse_position != current_mouse_position:
             logger.debug("User activity detected. Resetting inactivity timer.")
-            self.user_activity_timer.stop()
-            self.user_activity_timer.start()
             self.user_inactive_time = 0
         else:
-            self.user_inactive_time += 1
-            if self.user_inactive_time >= 10:
+            self.user_inactive_time += 10  # Increment by 10 seconds
+            if self.user_inactive_time >= 45:  # 45 seconds
                 self.start_mouse_movement()
         self.last_mouse_position = current_mouse_position
 
     def start_mouse_movement(self):
-        if not self.move_mouse_thread.isRunning():
+        if not self.move_mouse_thread or not self.move_mouse_thread.isRunning():
             logger.debug("Starting mouse movement.")
+            self.move_mouse_thread = MoveMouseThread()  # Create a new thread
             self.move_mouse_thread.start()
             self.user_inactive_time = 0
+
+    def simulate_keypress(self):
+        logger.debug("Simulating F15 keypress.")
+        QTest.keyPress(QWidget(), Qt.Key_F15)
