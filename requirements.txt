@@ -1,5 +1,6 @@
+setuptools>=59.6.0
 PyQt5==5.15.4
-PyInstaller==4.2
-Pillow==8.1.1
-scipy==1.6.1
-numpy==1.20.1
+PyInstaller==6.3.0
+Pillow
+scipy
+numpy
