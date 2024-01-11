@@ -36,6 +36,12 @@ sudo apt-get install xclip
 Whenever you enabled server in one computer it will create server you can check ip and port from there and from another computer you can click connect server and enter ip and port in this format `192.168.50.50:55555`.
 
 ## Running Application
+### From Source Code
+For running the code from source code follow below commands.
+```
+pip install -r requirements.txt
+python3.9 src/main.py
+```
 ### Linux 
 Linux needs sudo priveledges to run application. you can run with `sudo ./linux_channel_switcher` 
 ### MacOSx 
