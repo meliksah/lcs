@@ -38,9 +38,15 @@ Whenever you enabled server in one computer it will create server you can check 
 ## Running Application
 ### From Source Code
 For running the code from source code follow below commands.
+
 ```
 pip install -r requirements.txt
 python3.9 src/main.py
+```
+#### If Windows OS
+Install `pypiwin32` package before running
+```
+pip install pypiwin32
 ```
 ### Linux 
 Linux needs sudo priveledges to run application. you can run with `sudo ./linux_channel_switcher` 

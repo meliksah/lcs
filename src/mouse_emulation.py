@@ -3,12 +3,18 @@ import random
 import time
 import math
 import logging
+import platform  # Import platform module
+
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QPushButton
 from PyQt5.QtCore import QTimer, QThread, pyqtSignal, Qt
 from PyQt5.QtGui import QCursor
 from PyQt5.QtTest import QTest
 from scipy import interpolate
 import numpy as np
+
+# Add win32com.client if Windows
+if platform.system() == 'Windows':
+    import win32com.client
 
 # Set up logging
 logging.basicConfig(level=logging.DEBUG)
@@ -65,6 +71,8 @@ class MouseEmulation:
         self.keypress_timer.setInterval(30000)  # 30 seconds
         self.keypress_timer.timeout.connect(self.simulate_keypress)
 
+        self.is_windows = platform.system() == 'Windows'
+
     def start(self):
         logger.debug("Starting MouseEmulation.")
         self.last_mouse_position = QCursor.pos()
@@ -99,5 +107,10 @@ class MouseEmulation:
             self.user_inactive_time = 0
 
     def simulate_keypress(self):
-        logger.debug("Simulating F15 keypress.")
-        QTest.keyPress(QWidget(), Qt.Key_F15)
+        if self.is_windows:
+            logger.debug("Simulating F15 keypress on Windows.")
+            shell = win32com.client.Dispatch("WScript.Shell")
+            shell.SendKeys('{F15}')
+        else:
+            logger.debug("Simulating F15 keypress.")
+            QTest.keyPress(QWidget(), Qt.Key_F15)
