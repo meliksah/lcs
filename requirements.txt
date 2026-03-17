@@ -1,5 +1,5 @@
 setuptools>=59.6.0
-PyQt5==5.15.11
+PyQt6>=6.6.0
 PyInstaller==6.3.0
 Pillow
 scipy

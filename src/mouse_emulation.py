@@ -3,20 +3,18 @@ import random
 import time
 import math
 import logging
-import platform  # Import platform module
+import platform
 
-from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QPushButton
-from PyQt5.QtCore import QTimer, QThread, pyqtSignal, Qt
-from PyQt5.QtGui import QCursor
-from PyQt5.QtTest import QTest
+from PyQt6.QtWidgets import QApplication, QWidget
+from PyQt6.QtCore import QTimer, QThread, pyqtSignal, Qt, QPoint
+from PyQt6.QtGui import QCursor
+from PyQt6.QtTest import QTest
 from scipy import interpolate
 import numpy as np
 
-# Add win32com.client if Windows
 if platform.system() == 'Windows':
     import win32com.client
 
-# Set up logging
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
@@ -24,16 +22,27 @@ def point_dist(x1, y1, x2, y2):
     return math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
 
 class MoveMouseThread(QThread):
-    def __init__(self):
+    # Use signal to move cursor from the GUI thread
+    move_cursor = pyqtSignal(int, int)
+
+    def __init__(self, start_pos, screen_rect):
         super().__init__()
+        self._running = True
+        self._start_pos = start_pos
+        self._screen_rect = screen_rect
+
+    def stop(self):
+        self._running = False
 
     def run(self):
         logger.debug("Starting mouse movement.")
         cp = random.randint(3, 5)
-        x1, y1 = QCursor.pos().x(), QCursor.pos().y()
-        screen_width, screen_height = QApplication.desktop().screenGeometry().width(), QApplication.desktop().screenGeometry().height()
-        x2 = random.randint(0, screen_width)
-        y2 = random.randint(0, screen_height)
+        x1, y1 = self._start_pos.x(), self._start_pos.y()
+        # Use provided full virtual desktop geometry
+        screen_width = self._screen_rect.width()
+        screen_height = self._screen_rect.height()
+        x2 = random.randint(self._screen_rect.x(), self._screen_rect.x() + screen_width)
+        y2 = random.randint(self._screen_rect.y(), self._screen_rect.y() + screen_height)
         x = np.linspace(x1, x2, num=cp, dtype='int')
         y = np.linspace(y1, y2, num=cp, dtype='int')
 
@@ -54,7 +63,9 @@ class MoveMouseThread(QThread):
         point_list = zip(*(i.astype(int) for i in points))
 
         for point in point_list:
-            QCursor.setPos(*point)
+            if not self._running:
+                break
+            self.move_cursor.emit(int(point[0]), int(point[1]))
             time.sleep(timeout)
         logger.debug("Mouse movement completed.")
 
@@ -68,7 +79,7 @@ class MouseEmulation:
         self.user_inactive_time = 0
 
         self.keypress_timer = QTimer()
-        self.keypress_timer.setInterval(30000)  # 30 seconds
+        self.keypress_timer.setInterval(30000)
         self.keypress_timer.timeout.connect(self.simulate_keypress)
 
         self.is_windows = platform.system() == 'Windows'
@@ -77,15 +88,17 @@ class MouseEmulation:
         logger.debug("Starting MouseEmulation.")
         self.last_mouse_position = QCursor.pos()
         self.user_inactive_time = 0
-        self.mouse_activity_timer.start()  # Check for user activity every 10 seconds
-        self.keypress_timer.start()  # Start the keypress simulation
+        self.mouse_activity_timer.start()
+        self.keypress_timer.start()
 
     def stop(self):
         logger.debug("Stopping MouseEmulation.")
         self.mouse_activity_timer.stop()
         self.keypress_timer.stop()
+        # Graceful thread stop instead of terminate()
         if self.move_mouse_thread and self.move_mouse_thread.isRunning():
-            self.move_mouse_thread.terminate()
+            self.move_mouse_thread.stop()
+            self.move_mouse_thread.wait(2000)
             self.move_mouse_thread = None
 
     def check_user_activity(self):
@@ -94,15 +107,22 @@ class MouseEmulation:
             logger.debug("User activity detected. Resetting inactivity timer.")
             self.user_inactive_time = 0
         else:
-            self.user_inactive_time += 10  # Increment by 10 seconds
-            if self.user_inactive_time >= 45:  # 45 seconds
+            self.user_inactive_time += 10
+            if self.user_inactive_time >= 45:
                 self.start_mouse_movement()
         self.last_mouse_position = current_mouse_position
+
+    def _on_move_cursor(self, x, y):
+        QCursor.setPos(x, y)
 
     def start_mouse_movement(self):
         if not self.move_mouse_thread or not self.move_mouse_thread.isRunning():
             logger.debug("Starting mouse movement.")
-            self.move_mouse_thread = MoveMouseThread()  # Create a new thread
+            # Use virtual desktop geometry (all monitors combined)
+            screen_rect = QApplication.primaryScreen().virtualGeometry()
+            self.move_mouse_thread = MoveMouseThread(QCursor.pos(), screen_rect)
+            # Connect signal so cursor is moved from the GUI thread
+            self.move_mouse_thread.move_cursor.connect(self._on_move_cursor)
             self.move_mouse_thread.start()
             self.user_inactive_time = 0
 
@@ -113,4 +133,4 @@ class MouseEmulation:
             shell.SendKeys('{F15}')
         else:
             logger.debug("Simulating F15 keypress.")
-            QTest.keyPress(QWidget(), Qt.Key_F15)
+            QTest.keyPress(QWidget(), Qt.Key.Key_F15)
