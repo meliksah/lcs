@@ -1,6 +1,6 @@
 setuptools>=59.6.0
 PyQt6>=6.6.0
-PyInstaller==6.3.0
+PyInstaller>=6.11.0
 Pillow
 scipy
 numpy
