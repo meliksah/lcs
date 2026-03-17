@@ -53,6 +53,47 @@ jobs:
         fi
       shell: bash
 
+    - name: Import Apple signing certificate
+      if: matrix.os == 'macos-latest'
+      env:
+        APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+        APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+      run: |
+        # Create temporary keychain
+        KEYCHAIN_PATH=$RUNNER_TEMP/signing.keychain-db
+        KEYCHAIN_PASSWORD=$(openssl rand -hex 12)
+        security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+        security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+        security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+        # Import certificate
+        echo "$APPLE_CERTIFICATE" | base64 --decode > $RUNNER_TEMP/certificate.p12
+        security import $RUNNER_TEMP/certificate.p12 -P "$APPLE_CERTIFICATE_PASSWORD" \
+          -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+        security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+        security list-keychains -d user -s "$KEYCHAIN_PATH" login.keychain-db
+
+    - name: Sign macOS app
+      if: matrix.os == 'macos-latest'
+      env:
+        APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+      run: |
+        # Sign all binaries inside the app bundle
+        find dist/logitech_channel_switcher.app -type f \( -name "*.dylib" -o -name "*.so" -o -perm +111 \) \
+          -exec codesign --force --options runtime --sign "$APPLE_SIGNING_IDENTITY" --timestamp {} \;
+
+        # Sign the main executable
+        codesign --force --options runtime --sign "$APPLE_SIGNING_IDENTITY" --timestamp \
+          dist/logitech_channel_switcher.app/Contents/MacOS/logitech_channel_switcher
+
+        # Sign the app bundle itself
+        codesign --force --options runtime --sign "$APPLE_SIGNING_IDENTITY" --timestamp \
+          dist/logitech_channel_switcher.app
+
+        # Verify
+        codesign --verify --deep --strict dist/logitech_channel_switcher.app
+        echo "Code signing verified successfully"
+
     - name: Create macOS DMG
       if: matrix.os == 'macos-latest'
       run: |
@@ -68,6 +109,20 @@ jobs:
           "logitech_channel_switcher.dmg" \
           "dist/logitech_channel_switcher.app" \
           || test $? -eq 2
+
+    - name: Sign macOS DMG
+      if: matrix.os == 'macos-latest'
+      env:
+        APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+      run: |
+        codesign --force --sign "$APPLE_SIGNING_IDENTITY" --timestamp logitech_channel_switcher.dmg
+        codesign --verify logitech_channel_switcher.dmg
+        echo "DMG signed successfully"
+
+    - name: Cleanup keychain
+      if: matrix.os == 'macos-latest' && always()
+      run: |
+        security delete-keychain $RUNNER_TEMP/signing.keychain-db 2>/dev/null || true
 
     - name: Create Windows installer
       if: matrix.os == 'windows-latest'
