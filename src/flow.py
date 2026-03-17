@@ -12,10 +12,10 @@ class Flow:
         self.timer.timeout.connect(self.check_mouse_position)
         screen_count = desktop.screenCount()
         screen_geometries = [desktop.screen(i).geometry() for i in range(screen_count)]
-        self.rightmost_edge = max([geometry.x() + geometry.width() for geometry in screen_geometries])
+        self.rightmost_edge = max([geometry.x() + geometry.width() for geometry in screen_geometries])-1
         self.leftmost_edge = min([geometry.x() for geometry in screen_geometries])
         self.topmost_edge = min([geometry.y() for geometry in screen_geometries])
-        self.bottommost_edge = max([geometry.y() + geometry.height() for geometry in screen_geometries])
+        self.bottommost_edge = max([geometry.y() + geometry.height() for geometry in screen_geometries])-1
         self.offsets = {
             'left': QPoint(1, 0),
             'right': QPoint(-1, 0),
