@@ -105,7 +105,7 @@ class SettingsDialog(QDialog):
         super().__init__()
         screen_locations = ['top', 'bottom', 'right', 'left', 'none']
         self.setWindowTitle('Settings')
-        self.setWindowIcon(QIcon(get_absolute_file_data_path('icon', 'icon.png')))
+        self.setWindowIcon(QIcon(get_absolute_file_data_path('icon', 'split-screen.png')))
         self.setWindowFlags(Qt.WindowType.WindowCloseButtonHint)
 
         self.protocol_combo = QComboBox()

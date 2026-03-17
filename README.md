@@ -1,70 +1,75 @@
 # Logitech Channel Switcher
+
 ## Flow
 This script allows you to switch channels of your Logitech keyboard and mouse automatically whenever the mouse goes over a specific part of the screen, which is configurable.
 
 <img width="100" alt="image" src="https://user-images.githubusercontent.com/9367348/225811049-dd1e2950-fe20-44ce-98fc-4b6675b76e02.png">
 <img width="300" alt="image" src="https://user-images.githubusercontent.com/9367348/225811535-97c6bf67-befe-42d8-ab6d-956b3ef1824f.png">
 
-You need to change Receiver Slot and ID accordingly in above settings. 0x10 at header, const/magic number and paddings are constant. Target channel is calculating according to if mouse go Target 1 region it is passing 0 and switching to 1. if mouse go Target 2 region it is passing 1 and switching to channel 2. If mouse go Target 3 region it is passing 2 and switching to 3rd channel.
+You need to change Receiver Slot and ID accordingly in above settings. Target channel is calculated according to the configured screen edge — Target 1 switches to channel 1, Target 2 to channel 2, Target 3 to channel 3.
 
-| Device   | Header | Receiver Slot | ID | Const/Magic Number | Target Channel | Padding | Padding |
-|----------|--------|---------------|----|-------------------|----------------|---------|---------|
-| Keyboard | 0x10   | 0x01          | 0x09 | 0x1c              | 0x00           | 0x00    | 0x00    |
-| Mouse    | 0x10   | 0x02          | 0x0c | 0x1c              | 0x00           | 0x00    | 0x00    |
+Supports both **Unifying** (HID++ 1.0) and **Bolt** (HID++ 2.0) protocols. See [BOLT_SETUP.md](BOLT_SETUP.md) for Bolt configuration details.
 
-For running application in linux you need to grant execution permission and run with sudo. Otherwise application cannot connect to hidapi
+| Protocol | Device   | Header | Receiver Slot | ID   | Const | Target Channel | Padding |
+|----------|----------|--------|---------------|------|-------|----------------|---------|
+| Unifying | Keyboard | 0x10   | 0x01          | 0x09 | 0x1c  | 0x00           | 0x00 0x00 |
+| Unifying | Mouse    | 0x10   | 0x02          | 0x0c | 0x1c  | 0x00           | 0x00 0x00 |
+| Bolt     | Keyboard | 0x11   | 0x01          | 0x09 | 0x1E  | 0x00           | 0x00 x15  |
+| Bolt     | Mouse    | 0x11   | 0x02          | 0x0E | 0x1E  | 0x00           | 0x00 x15  |
 
-```
-chmod +x logitech_channel_switcher-linux
-```
+Use `python tools/probe_devices.py` to discover your device's Receiver Slot and ID values.
 
-For running application
-```
-sudo ./logitech_channel_switcher-linux
-```
 ## Mouse Emulation
-For preventing sleep of computer whenever you are focused another computer it can move your mouse in every 10 second. If it detect user movement it will give up moving until user is not moving for 10 second.
+Prevents computer sleep when you're focused on another machine. Moves the mouse after 45 seconds of inactivity and simulates F15 keypress every 30 seconds. Resets when user activity is detected.
 
 ## Uniclip
 
-For linux users they need to install xclip, xsel, wayland or termux. [Details can be found here](https://github.com/quackduck/uniclip/blob/master/uniclip.go#L323)
+Clipboard sharing between machines over LAN.
 
-```
-sudo apt-get install xclip
-```
+For Linux users, install xclip: `sudo apt-get install xclip`. [Details here](https://github.com/quackduck/uniclip/blob/master/uniclip.go#L323)
 
-Whenever you enabled server in one computer it will create server you can check ip and port from there and from another computer you can click connect server and enter ip and port in this format `192.168.50.50:55555`.
+Start the server on one computer, note the IP:port shown, then connect from the other computer using that address (e.g. `192.168.50.50:55555`).
 
 ## Running Application
-### From Source Code
-For running the code from source code follow below commands.
 
-```
+### From Source Code
+```bash
 pip install -r requirements.txt
-python3.9 src/main.py
+python src/main.py
 ```
-#### If Windows OS
-Install `pypiwin32` package before running
-```
+
+#### Windows
+Install `pypiwin32` before running:
+```bash
 pip install pypiwin32
 ```
-### Linux 
-Linux needs sudo priveledges to run application. you can run with `sudo ./linux_channel_switcher` 
-### MacOSx 
-MacOSx needs input tracking privileges whenever you activate from system tray icon and go to edge of screen which is set at settings it needs to ask automatically
-### Windows
-Windows can run exe file directly
-## Creating distribution
 
-### Linux and MacOSx
-```
-pyinstaller --onefile --windowed --add-data "static/icon:static/icon" --add-data "static/hidapitester:static/hidapitester" --add-data "static/uniclip:static/uniclip" --icon static/icon/icon.icns --name logitech_channel_switcher src/main.py
+### Linux
+Linux needs sudo privileges for HID access:
+```bash
+sudo ./Logitech\ Channel\ Switcher
 ```
 
+### macOS
+macOS needs Input Monitoring permission (System Settings → Privacy & Security → Input Monitoring). Grant it to Terminal or Python.
+
 ### Windows
+Run the exe file directly or use the installer.
+
+## Creating Distribution
+
+CI/CD builds automatically on tag push (`v*`) using `--onedir` mode for faster startup.
+
+### Linux and macOS
+```bash
+pyinstaller --onedir --windowed --add-data "static/icon:static/icon" --add-data "static/hidapitester:static/hidapitester" --add-data "static/uniclip:static/uniclip" --icon static/icon/icon.icns --name "Logitech Channel Switcher" src/main.py
 ```
-python -m PyInstaller --onefile --windowed --add-data "static/icon;static/icon" --add-data "static/hidapitester;static/hidapitester" --add-data "static/uniclip;static/uniclip" --icon static/icon/icon.ico --name logitech_channel_switcher src/main.py
+
+### Windows
+```bash
+python -m PyInstaller --onedir --windowed --add-data "static/icon;static/icon" --add-data "static/hidapitester;static/hidapitester" --add-data "static/uniclip;static/uniclip" --icon static/icon/icon.ico --name "Logitech Channel Switcher" src/main.py
 ```
+
 ## License
 
 This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
