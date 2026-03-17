@@ -158,7 +158,7 @@ class SystemTrayIcon(QSystemTrayIcon):
 
 
 tray_icon = SystemTrayIcon(
-    QIcon(get_absolute_file_data_path('icon', 'icon.png')))
+    QIcon(get_absolute_file_data_path('icon', 'split-screen.png')))
 
 tray_icon.show()
 sys.exit(app.exec())

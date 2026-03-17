@@ -1,5 +1,5 @@
 build
 dist
-logitech_channel_switcher.spec
+*.spec
 .DS_Store
 /**/__pycache__

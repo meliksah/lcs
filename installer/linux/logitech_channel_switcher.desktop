@@ -1,8 +1,8 @@
 [Desktop Entry]
 Name=Logitech Channel Switcher
 Comment=Switch Logitech device channels across computers
-Exec=/opt/logitech_channel_switcher/logitech_channel_switcher
-Icon=/opt/logitech_channel_switcher/static/icon/icon.png
+Exec="/opt/logitech-channel-switcher/Logitech Channel Switcher"
+Icon=/opt/logitech-channel-switcher/static/icon/split-screen.png
 Terminal=false
 Type=Application
 Categories=Utility;

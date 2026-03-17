@@ -1,22 +1,22 @@
 #!/bin/bash
 set -e
 
-INSTALL_DIR="/opt/logitech_channel_switcher"
-DESKTOP_FILE="$HOME/.local/share/applications/logitech_channel_switcher.desktop"
+INSTALL_DIR="/opt/logitech-channel-switcher"
+DESKTOP_FILE="$HOME/.local/share/applications/logitech-channel-switcher.desktop"
 
 echo "Installing Logitech Channel Switcher..."
 
 sudo mkdir -p "$INSTALL_DIR"
-sudo cp -r logitech_channel_switcher/* "$INSTALL_DIR/"
-sudo chmod +x "$INSTALL_DIR/logitech_channel_switcher"
+sudo cp -r "Logitech Channel Switcher"/* "$INSTALL_DIR/"
+sudo chmod +x "$INSTALL_DIR/Logitech Channel Switcher"
 
 mkdir -p "$(dirname "$DESKTOP_FILE")"
 cat > "$DESKTOP_FILE" << EOF
 [Desktop Entry]
 Name=Logitech Channel Switcher
 Comment=Switch Logitech device channels across computers
-Exec=$INSTALL_DIR/logitech_channel_switcher
-Icon=$INSTALL_DIR/static/icon/icon.png
+Exec="$INSTALL_DIR/Logitech Channel Switcher"
+Icon=$INSTALL_DIR/static/icon/split-screen.png
 Terminal=false
 Type=Application
 Categories=Utility;

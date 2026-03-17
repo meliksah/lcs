@@ -47,9 +47,9 @@ jobs:
     - name: Build application
       run: |
         if [ "${{ matrix.os }}" == "windows-latest" ]; then
-          python -m PyInstaller --onedir --windowed --add-data "static/icon;static/icon" --add-data "static/hidapitester;static/hidapitester" --add-data "static/uniclip;static/uniclip" --icon static/icon/icon.ico --name logitech_channel_switcher src/main.py
+          python -m PyInstaller --onedir --windowed --add-data "static/icon;static/icon" --add-data "static/hidapitester;static/hidapitester" --add-data "static/uniclip;static/uniclip" --icon static/icon/icon.ico --name "Logitech Channel Switcher" src/main.py
         else
-          pyinstaller --onedir --windowed --add-data "static/icon:static/icon" --add-data "static/hidapitester:static/hidapitester" --add-data "static/uniclip:static/uniclip" --icon static/icon/icon.icns --name logitech_channel_switcher src/main.py
+          pyinstaller --onedir --windowed --add-data "static/icon:static/icon" --add-data "static/hidapitester:static/hidapitester" --add-data "static/uniclip:static/uniclip" --icon static/icon/icon.icns --name "Logitech Channel Switcher" src/main.py
         fi
       shell: bash
 
@@ -79,19 +79,19 @@ jobs:
         APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
       run: |
         # Sign all binaries inside the app bundle
-        find dist/logitech_channel_switcher.app -type f \( -name "*.dylib" -o -name "*.so" -o -perm +111 \) \
+        find "dist/Logitech Channel Switcher.app" -type f \( -name "*.dylib" -o -name "*.so" -o -perm +111 \) \
           -exec codesign --force --options runtime --sign "$APPLE_SIGNING_IDENTITY" --timestamp {} \;
 
         # Sign the main executable
         codesign --force --options runtime --sign "$APPLE_SIGNING_IDENTITY" --timestamp \
-          dist/logitech_channel_switcher.app/Contents/MacOS/logitech_channel_switcher
+          "dist/Logitech Channel Switcher.app/Contents/MacOS/Logitech Channel Switcher"
 
         # Sign the app bundle itself
         codesign --force --options runtime --sign "$APPLE_SIGNING_IDENTITY" --timestamp \
-          dist/logitech_channel_switcher.app
+          "dist/Logitech Channel Switcher.app"
 
         # Verify
-        codesign --verify --deep --strict dist/logitech_channel_switcher.app
+        codesign --verify --deep --strict "dist/Logitech Channel Switcher.app"
         echo "Code signing verified successfully"
 
     - name: Create macOS DMG
@@ -104,10 +104,10 @@ jobs:
           --window-pos 200 120 \
           --window-size 600 400 \
           --icon-size 100 \
-          --icon "logitech_channel_switcher.app" 175 190 \
+          --icon "Logitech Channel Switcher.app" 175 190 \
           --app-drop-link 425 190 \
-          "logitech_channel_switcher.dmg" \
-          "dist/logitech_channel_switcher.app" \
+          "Logitech Channel Switcher.dmg" \
+          "dist/Logitech Channel Switcher.app" \
           || test $? -eq 2
 
     - name: Sign macOS DMG
@@ -115,8 +115,8 @@ jobs:
       env:
         APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
       run: |
-        codesign --force --sign "$APPLE_SIGNING_IDENTITY" --timestamp logitech_channel_switcher.dmg
-        codesign --verify logitech_channel_switcher.dmg
+        codesign --force --sign "$APPLE_SIGNING_IDENTITY" --timestamp "Logitech Channel Switcher.dmg"
+        codesign --verify "Logitech Channel Switcher.dmg"
         echo "DMG signed successfully"
 
     - name: Cleanup keychain
@@ -134,33 +134,33 @@ jobs:
       if: matrix.os == 'ubuntu-latest'
       run: |
         mkdir -p package
-        cp -r dist/logitech_channel_switcher package/
+        cp -r "dist/Logitech Channel Switcher" package/
         cp installer/linux/install.sh package/
         cp installer/linux/uninstall.sh package/
         chmod +x package/install.sh package/uninstall.sh
         cd package
-        tar -czf ../logitech_channel_switcher-linux-x64.tar.gz .
+        tar -czf ../logitech-channel-switcher-linux-x64.tar.gz .
 
     - name: Upload macOS artifact
       if: matrix.os == 'macos-latest'
       uses: actions/upload-artifact@v4
       with:
-        name: logitech_channel_switcher-macos
-        path: logitech_channel_switcher.dmg
+        name: logitech-channel-switcher-macos
+        path: Logitech Channel Switcher.dmg
 
     - name: Upload Windows artifact
       if: matrix.os == 'windows-latest'
       uses: actions/upload-artifact@v4
       with:
-        name: logitech_channel_switcher-windows
-        path: installer/windows/output/logitech_channel_switcher_setup.exe
+        name: logitech-channel-switcher-windows
+        path: installer/windows/output/logitech-channel-switcher-setup.exe
 
     - name: Upload Linux artifact
       if: matrix.os == 'ubuntu-latest'
       uses: actions/upload-artifact@v4
       with:
-        name: logitech_channel_switcher-linux
-        path: logitech_channel_switcher-linux-x64.tar.gz
+        name: logitech-channel-switcher-linux
+        path: logitech-channel-switcher-linux-x64.tar.gz
 
   release:
     needs: build
@@ -177,6 +177,6 @@ jobs:
       uses: softprops/action-gh-release@v2
       with:
         files: |
-          artifacts/logitech_channel_switcher-macos/logitech_channel_switcher.dmg
-          artifacts/logitech_channel_switcher-windows/logitech_channel_switcher_setup.exe
-          artifacts/logitech_channel_switcher-linux/logitech_channel_switcher-linux-x64.tar.gz
+          artifacts/logitech-channel-switcher-macos/Logitech Channel Switcher.dmg
+          artifacts/logitech-channel-switcher-windows/logitech-channel-switcher-setup.exe
+          artifacts/logitech-channel-switcher-linux/logitech-channel-switcher-linux-x64.tar.gz

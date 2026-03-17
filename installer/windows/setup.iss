@@ -1,7 +1,7 @@
 #define MyAppName "Logitech Channel Switcher"
-#define MyAppVersion "0.0.5"
+#define MyAppVersion "0.1.0"
 #define MyAppPublisher "meliksah"
-#define MyAppExeName "logitech_channel_switcher.exe"
+#define MyAppExeName "Logitech Channel Switcher.exe"
 
 [Setup]
 AppId={{B5F2E8A1-3C4D-4E6F-9A1B-2C3D4E5F6A7B}
@@ -12,7 +12,7 @@ DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
 OutputDir=output
-OutputBaseFilename=logitech_channel_switcher_setup
+OutputBaseFilename=logitech-channel-switcher-setup
 SetupIconFile=..\..\static\icon\icon.ico
 Compression=lzma
 SolidCompression=yes
@@ -26,7 +26,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
 
 [Files]
-Source: "..\..\dist\logitech_channel_switcher\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\..\dist\Logitech Channel Switcher\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
