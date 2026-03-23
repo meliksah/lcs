@@ -1,12 +1,15 @@
-import platform
-import subprocess
 import time
 from PyQt6.QtCore import Qt, QTimer, QPoint, QThread, pyqtSignal
 from PyQt6.QtGui import QCursor
 from PyQt6.QtWidgets import QApplication
 
 from settings import config
-from utils import get_absolute_file_data_path, creation_flags
+from hid_protocol import (
+    get_hidapi_executable,
+    build_channel_switch_packet,
+    build_hidapi_command,
+    send_hid_command
+)
 
 
 class ChannelSwitchThread(QThread):
@@ -20,73 +23,21 @@ class ChannelSwitchThread(QThread):
         self._position = position
 
     def run(self):
-        success_ms = _write_to_adu(self._ms_cmd)
-        success_kb = _write_to_adu(self._kb_cmd)
+        success_ms = _send_hid_packet(self._ms_cmd)
+        success_kb = _send_hid_packet(self._kb_cmd)
         self.finished.emit(success_ms, success_kb, self._position)
 
 
-def _get_hidapi_executable_full_path():
-    arch = platform.machine()
-    system = platform.system().lower()
-    executable = None
-
-    if system == 'windows':
-        if arch in ('x86_64', 'AMD64'):
-            executable = 'hidapitester-windows-x86_64.exe'
-    elif system == 'linux':
-        if arch == 'x86_64':
-            executable = 'hidapitester-linux-x86_64'
-        elif arch == 'armv7l':
-            executable = 'hidapitester-linux-armv7l'
-    elif system == 'darwin':
-        if arch == 'arm64':
-            executable = 'hidapitester-macos-arm64'
-        elif arch == 'x86_64':
-            executable = 'hidapitester-macos-x86_64'
-
-    if executable is None:
-        raise RuntimeError(f"Unsupported platform: {system} {arch}")
-
-    return get_absolute_file_data_path('hidapitester', executable)
-
-
-def _build_hidapi_command(msg_str):
-    exec_path = _get_hidapi_executable_full_path()
-    hex_string = ','.join(f'0x{byte:02X}' for byte in msg_str)
-    length = str(len(msg_str))
-    usage = '2' if config.PROTOCOL == 'bolt' else '1'
-    cmd = [
-        exec_path, '--vidpid', f'{config.VENDOR_ID:04X}:{config.PRODUCT_ID:04X}',
-        '--usage', usage, '--usagePage', '0xFF00', '--open',
-        '--length', length, '--send-output', hex_string,
-        '--length', length, '--send-output', hex_string,
-    ]
-    return cmd
-
-
-def _write_to_adu(msg_str):
-    cmd = _build_hidapi_command(msg_str)
+def _send_hid_packet(msg_bytes):
+    """Send HID packet with retries using consolidated protocol functions."""
+    cmd = build_hidapi_command(
+        config.VENDOR_ID,
+        config.PRODUCT_ID,
+        config.PROTOCOL,
+        msg_bytes
+    )
     print('Writing command: {}'.format(' '.join(cmd)))
-    max_retries = 10
-    success_msg = f"wrote {len(msg_str)} bytes"
-
-    for attempt in range(1, max_retries + 1):
-        try:
-            result = subprocess.run(cmd, capture_output=True, text=True, creationflags=creation_flags)
-        except Exception as e:
-            print('Error writing command: {}'.format(e))
-            if attempt < max_retries:
-                time.sleep(0.1)
-            continue
-
-        if success_msg in result.stdout:
-            return True
-        else:
-            print(f'Attempt {attempt}: Failed to write command')
-            if attempt < max_retries:
-                time.sleep(0.1)
-
-    return False
+    return send_hid_command(cmd, success_indicator='wrote', max_retries=10)
 
 
 class Flow:
@@ -174,3 +125,17 @@ class Flow:
             self._switch_thread.finished.connect(self._on_switch_finished)
             self._switch_thread.start()
             break
+# Build channel switch packets using protocol functions
+            ms_cmd = build_channel_switch_packet(
+                config.PROTOCOL,
+                config.MS_RECEIVER_SLOT,
+                config.MOUSE_ID,
+                channel
+            )
+            kb_cmd = build_channel_switch_packet(
+                config.PROTOCOL,
+                config.KB_RECEIVER_SLOT,
+                config.KEYBOARD_ID,
+                channel
+            )
+            
