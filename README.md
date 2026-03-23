@@ -19,6 +19,19 @@ Supports both **Unifying** (HID++ 1.0) and **Bolt** (HID++ 2.0) protocols. See [
 
 Use `python tools/probe_devices.py` to discover your device's Receiver Slot and ID values.
 
+## Command-Line Tools
+
+For keyboard shortcut-based channel switching or device discovery, see the [tools/](tools/) directory:
+
+- **[CLI Switcher](tools/README.md#cli-switcher)** - Stateless channel switching with zero-touch auto-configuration
+- **[Probe Devices](tools/README.md#probe-devices)** - Discover receiver and device configuration values
+- **[Keyboard Shortcuts](tools/shortcuts/README.md)** - Ready-to-use scripts for Windows, Linux, and macOS
+
+Perfect for:
+- Users who prefer keyboard shortcuts over automatic edge-switching
+- Enterprise deployments with DLP/zero-trust policies (no clipboard-sharing)
+- Environments where background processes are restricted
+
 ## Mouse Emulation
 Prevents computer sleep when you're focused on another machine. Moves the mouse after 45 seconds of inactivity and simulates F15 keypress every 30 seconds. Resets when user activity is detected.
 
