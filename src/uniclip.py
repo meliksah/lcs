@@ -1,7 +1,6 @@
-import platform
 import re
 import subprocess
-from utils import get_absolute_file_data_path, creation_flags
+from utils import get_platform_executable, creation_flags
 from settings import config
 
 class Uniclip:
@@ -11,35 +10,8 @@ class Uniclip:
         self.client_process = None
 
     def get_uniclip_executable_full_path(self):
-        arch = platform.machine()
-        system = platform.system().lower()
-        executable = None
-        if system == 'windows':
-            if arch in ('x86_64', 'AMD64'):
-                executable = 'uniclip-windows-x86_64.exe'
-            elif arch == 'armv6l':
-                executable = 'uniclip-windows-armv6.exe'
-            elif arch == 'x86':
-                executable = 'uniclip-windows-x86.exe'
-        elif system == 'linux':
-            if arch == 'x86_64':
-                executable = 'uniclip-linux-x86_64'
-            elif arch == 'armv6l':
-                executable = 'uniclip-linux-armv6'
-            elif arch in ('arm64', 'aarch64'):
-                executable = 'uniclip-linux-arm64'
-            elif arch == 'x86':
-                executable = 'uniclip-linux-x86'
-        elif system == 'darwin':
-            if arch == 'x86_64':
-                executable = 'uniclip-macos-x86_64'
-            elif arch == 'arm64':
-                executable = 'uniclip-macos-arm64'
-
-        if executable is None:
-            raise RuntimeError(f"Unsupported platform: {system} {arch}")
-
-        return get_absolute_file_data_path('uniclip', executable)
+        """Get platform-specific uniclip binary path."""
+        return get_platform_executable('uniclip', 'uniclip')
 
     def start_server(self):
         if self.server_process:

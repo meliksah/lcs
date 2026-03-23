@@ -31,7 +31,19 @@ from pathlib import Path
 # Add src directory to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from utils import get_absolute_file_data_path, creation_flags
+from utils import creation_flags
+from hid_protocol import (
+    get_hidapi_executable,
+    build_channel_switch_packet as build_packet,
+    build_hidapi_command as build_cmd,
+    send_hid_command as send_cmd,
+    format_vidpid,
+    ping_device,
+    query_feature_index,
+    FEATURE_CHANGE_HOST,
+    DEFAULT_BOLT_VIDPID,
+    DEFAULT_UNIFYING_VIDPID
+)
 
 # Minimal imports from settings (avoid PyQt6 dependencies)
 try:
@@ -102,107 +114,9 @@ def log_error(message):
     print(f"ERROR: {message}", file=sys.stderr)
 
 
-def get_hidapi_executable():
-    """Get platform-specific hidapitester binary path."""
-    import platform
-    system = platform.system().lower()
-    arch = platform.machine()
-    
-    if system == 'windows':
-        return get_absolute_file_data_path('hidapitester', 'hidapitester-windows-x86_64.exe')
-    elif system == 'darwin':
-        name = 'hidapitester-macos-arm64' if arch == 'arm64' else 'hidapitester-macos-x86_64'
-        return get_absolute_file_data_path('hidapitester', name)
-    else:
-        name = 'hidapitester-linux-armv7l' if arch == 'armv7l' else 'hidapitester-linux-x86_64'
-        return get_absolute_file_data_path('hidapitester', name)
-
-
-def build_hidapi_command(config, msg_bytes):
-    """Build hidapitester command for sending HID++ packet.
-    
-    Args:
-        config: Config object with VENDOR_ID, PRODUCT_ID, PROTOCOL
-        msg_bytes: list of bytes to send
-    
-    Returns:
-        List of command arguments for subprocess
-    """
-    exec_path = get_hidapi_executable()
-    hex_string = ','.join(f'0x{byte:02X}' for byte in msg_bytes)
-    length = str(len(msg_bytes))
-    usage = '2' if config.PROTOCOL == 'bolt' else '1'
-    
-    cmd = [
-        exec_path,
-        '--vidpid', f'{config.VENDOR_ID:04X}:{config.PRODUCT_ID:04X}',
-        '--usage', usage,
-        '--usagePage', '0xFF00',
-        '--open',
-        '--length', length,
-        '--send-output', hex_string,
-        '--length', length,
-        '--send-output', hex_string,  # Send twice for device wake
-    ]
-    return cmd
-
-
-def send_hid_command(config, msg_bytes, max_retries=3, quiet=False):
-    """Send HID command with retries.
-    
-    Args:
-        config: Config object
-        msg_bytes: list of bytes to send
-        max_retries: maximum number of retry attempts
-        quiet: suppress output if True
-    
-    Returns:
-        True if successful, False otherwise
-    """
-    cmd = build_hidapi_command(config, msg_bytes)
-    success_msg = f"wrote {len(msg_bytes)} bytes"
-    
-    for attempt in range(1, max_retries + 1):
-        try:
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                timeout=5,
-                creationflags=creation_flags
-            )
-            
-            if success_msg in result.stdout:
-                return True
-            
-            # Retry with delay if not last attempt
-            if attempt < max_retries:
-                time.sleep(0.1)
-                
-        except subprocess.TimeoutExpired:
-            log(f"  Timeout on attempt {attempt}/{max_retries}", quiet)
-            if attempt < max_retries:
-                time.sleep(0.1)
-        except Exception as e:
-            log(f"  Error on attempt {attempt}/{max_retries}: {e}", quiet)
-            if attempt < max_retries:
-                time.sleep(0.1)
-    
-    return False
-
-
+# Wrapper functions to adapt hid_protocol functions to cli_switcher interface
 def build_channel_switch_packet(config, device_type, channel):
-    """Build HID++ packet for switching channels.
-    
-    Args:
-        config: Config object with protocol and device settings
-        device_type: 'keyboard' or 'mouse'
-        channel: target channel (1, 2, or 3)
-    
-    Returns:
-        List of bytes representing the HID++ packet
-    """
-    # Get device-specific slot and feature index
+    """Build channel switch packet - wrapper for hid_protocol function."""
     if device_type == 'keyboard':
         receiver_slot = config.KB_RECEIVER_SLOT
         feature_index = config.KEYBOARD_ID
@@ -210,18 +124,13 @@ def build_channel_switch_packet(config, device_type, channel):
         receiver_slot = config.MS_RECEIVER_SLOT
         feature_index = config.MOUSE_ID
     
-    # Convert channel to zero-indexed (1→0, 2→1, 3→2)
-    channel_byte = channel - 1
-    
-    # Build packet based on protocol
-    if config.PROTOCOL == 'bolt':
-        # Bolt: 20 bytes, report ID 0x11, function 0x1E
-        packet = [0x11, receiver_slot, feature_index, 0x1E, channel_byte] + [0x00] * 15
-    else:
-        # Unifying: 7 bytes, report ID 0x10, function 0x1C
-        packet = [0x10, receiver_slot, feature_index, 0x1C, channel_byte, 0x00, 0x00]
-    
-    return packet
+    return build_packet(config.PROTOCOL, receiver_slot, feature_index, channel)
+
+
+def send_hid_command(config, msg_bytes, max_retries=3, quiet=False):
+    """Send HID command - wrapper for hid_protocol function."""
+    cmd = build_cmd(config.VENDOR_ID, config.PRODUCT_ID, config.PROTOCOL, msg_bytes)
+    return send_cmd(cmd, success_indicator='wrote', max_retries=max_retries, timeout=5, quiet=quiet)
 
 
 def switch_channel(config, channel, quiet=False):
